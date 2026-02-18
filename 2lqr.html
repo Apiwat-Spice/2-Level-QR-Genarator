@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>2-Level QR Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        canvas {
+            margin-top: 20px;
+        }
+
+        input {
+            padding: 8px;
+            margin: 5px;
+            width: 300px;
+        }
+
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>2-Level QR Demo (AES + ECC + Matrix Modify)</h2>
+
+    <input id="publicMsg" placeholder="Public Message (URL/Text)" /><br>
+    <input id="privateMsg" placeholder="Private Secret Message" /><br>
+    <input id="key" placeholder="AES Key" /><br>
+    <button onclick="generate2LQR()">Generate 2LQR</button>
+
+    <br>
+    <canvas id="qrCanvas"></canvas>
+
+    <script>
+        function simpleECC(data) {
+            // Mock ECC: เพิ่ม parity ต่อท้าย (demo concept)
+            let parity = data.slice(0, 8);
+            return data + parity;
+        }
+
+        function generate2LQR() {
+            const publicMsg = document.getElementById("publicMsg").value;
+            const privateMsg = document.getElementById("privateMsg").value;
+            const key = document.getElementById("key").value;
+
+            // 🔐 AES Encrypt Private
+            const encrypted = CryptoJS.AES.encrypt(privateMsg, key).toString();
+
+            // 📦 ECC Encode (Concept)
+            const eccData = simpleECC(encrypted);
+
+            // รวม Public + Private
+            const finalData = publicMsg + "|PRIVATE:" + eccData;
+
+            // 🧩 Generate QR
+            QRCode.toCanvas(document.getElementById("qrCanvas"), finalData, {
+                errorCorrectionLevel: 'H'
+            }, function (error) {
+                if (error) console.error(error);
+                else modifyMatrix();
+            });
+        }
+
+        // 🧩 Modify Matrix (เปลี่ยน pixel บางส่วน)
+        function modifyMatrix() {
+            const canvas = document.getElementById("qrCanvas");
+            const ctx = canvas.getContext("2d");
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // เปลี่ยนบาง pixel ให้เป็นลาย pattern (demo concept)
+            for (let i = 0; i < data.length; i += 4) {
+                if (i % 40 === 0) { // สุ่ม pattern
+                    data[i] = 200;     // R
+                    data[i + 1] = 0;     // G
+                    data[i + 2] = 200;   // B
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+    </script>
+
+</body>
+
+</html>
